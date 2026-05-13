@@ -1,0 +1,41 @@
+# Databricks Asset Bundle (DAB) root configuration
+#
+# A "bundle" packages all Databricks objects (jobs, clusters, notebooks)
+# into a single deployable unit managed via the Databricks CLI.
+# Think of it like a "deployment package" for your Databricks workspace.
+#
+# Deploy with: databricks bundle deploy --target dev
+# Run a job:   databricks bundle run etl_bronze_ingest
+
+bundle:
+  name: b2b-etl-platform
+
+# Targets map to deployment environments (workspaces)
+targets:
+  dev:
+    mode: development   # adds [dev <username>] prefix to avoid conflicts
+    default: true
+    workspace:
+      host: ${var.databricks_host}
+
+  prod:
+    mode: production
+    workspace:
+      host: ${var.databricks_host}
+
+variables:
+  databricks_host:
+    description: "Databricks workspace URL (from Terraform output)"
+    default: ""
+
+  storage_account_name:
+    description: "ADLS Gen2 storage account name (from Terraform output)"
+    default: ""
+
+  cluster_id:
+    description: "Pre-existing cluster ID for job runs (from Terraform output)"
+    default: ""
+
+# Include job resource files
+include:
+  - resources/*.yml

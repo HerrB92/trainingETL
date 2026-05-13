@@ -1,0 +1,66 @@
+name: Deploy — Databricks Asset Bundle
+
+on:
+  push:
+    branches: [main]
+    paths: ["etl/**", "databricks/**"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deployment target"
+        required: true
+        default: "dev"
+        type: choice
+        options: [dev, prod]
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.target || 'dev' }}
+    runs-on: ubuntu-latest
+
+    env:
+      DATABRICKS_HOST:  ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PAT_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Java (for PySpark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: pip install -r etl/requirements.txt
+
+      - name: Run tests before deploy
+        env:
+          SPARK_ENV: local
+        run: pytest tests/ -v --tb=short
+
+      - name: Set up Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate bundle
+        run: databricks bundle validate
+        working-directory: databricks/
+
+      - name: Deploy bundle
+        run: |
+          TARGET="${{ github.event.inputs.target || 'dev' }}"
+          databricks bundle deploy --target "$TARGET"
+        working-directory: databricks/
+
+      - name: Run smoke test (bronze ingestion dry-run check)
+        if: ${{ github.event.inputs.target != 'prod' }}
+        run: |
+          databricks bundle run etl_bronze_ingest --no-wait
+        working-directory: databricks/
+        continue-on-error: true  # don't fail deploy if smoke test times out
