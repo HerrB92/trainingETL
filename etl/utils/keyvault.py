@@ -69,7 +69,7 @@ def _get_dbutils():
         spark = SparkSession.builder.getOrCreate()
         # IPython-style globals trick used by Databricks utilities
         sc = spark.sparkContext
-        _ = sc  # noqa: used to avoid 'unused' warnings
+        _ = sc  # noqa: F841
         import IPython
 
         return IPython.get_ipython().user_ns.get("dbutils")

@@ -12,7 +12,7 @@ After categorization, the product is written back to Silver with:
   - _categorized_by: 'llm'
 """
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 
 from etl.utils.keyvault import get_ai_services_config

@@ -8,17 +8,15 @@ Builds:
   fact_sales    — grain: one order line item
 """
 
-from datetime import date, timedelta
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     BooleanType,
     ByteType,
     DateType,
     IntegerType,
-    LongType,
     ShortType,
     StringType,
     StructField,

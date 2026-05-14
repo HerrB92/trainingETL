@@ -4,7 +4,6 @@ These tests verify the metadata column logic and path construction
 without requiring an actual Azure SQL connection.
 """
 
-import pytest
 from pyspark.sql import functions as F
 
 

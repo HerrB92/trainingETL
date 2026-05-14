@@ -5,8 +5,6 @@ Delta Lake is available via the delta-spark package.
 """
 
 import os
-import shutil
-import tempfile
 
 import pytest
 from delta.pip_utils import configure_spark_with_delta_pip
@@ -79,8 +77,13 @@ def sample_customers(spark):
 @pytest.fixture
 def sample_products(spark):
     """Small DataFrame of valid product records."""
-    from pyspark.sql.types import (DecimalType, IntegerType, StringType,
-                                   StructField, StructType)
+    from pyspark.sql.types import (
+        DecimalType,
+        IntegerType,
+        StringType,
+        StructField,
+        StructType,
+    )
 
     schema = StructType([
         StructField("product_id", IntegerType(), False),
@@ -104,8 +107,7 @@ def sample_products(spark):
 @pytest.fixture
 def sample_orders(spark):
     """Small DataFrame of valid order records."""
-    from pyspark.sql.types import IntegerType, StringType, StructField, StructType, TimestampType
-    import datetime
+    from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 
     schema = StructType([
         StructField("order_id", IntegerType(), False),
@@ -126,7 +128,13 @@ def sample_orders(spark):
 def sample_order_items(spark):
     """Small DataFrame of valid order item records."""
     from decimal import Decimal
-    from pyspark.sql.types import (DecimalType, IntegerType, StructField, StructType)
+
+    from pyspark.sql.types import (
+        DecimalType,
+        IntegerType,
+        StructField,
+        StructType,
+    )
 
     schema = StructType([
         StructField("order_item_id", IntegerType(), False),

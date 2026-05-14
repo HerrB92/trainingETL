@@ -14,10 +14,9 @@ Why embeddings?
   close in embedding space because they serve the same purpose.
 """
 
-import os
 from functools import lru_cache
 
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import ArrayType, FloatType
 
@@ -99,7 +98,7 @@ def search_products(
     storage_account: str,
     query: str,
     top_k: int = 5,
-) -> "pyspark.sql.DataFrame":
+) -> DataFrame:
     """Semantic product search: returns top-k products similar to the query.
 
     Args:
@@ -109,8 +108,6 @@ def search_products(
     Returns:
         Spark DataFrame with columns: product_id, sku, name, category, similarity_score
     """
-    import math
-
     query_embedding = _embed_texts([query])[0]
 
     gold_path = f"abfss://gold@{storage_account}.dfs.core.windows.net/dim_product"

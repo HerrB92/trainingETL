@@ -3,8 +3,6 @@
 All tests use the local Spark session (no Azure required).
 """
 
-import pytest
-from pyspark.sql import functions as F
 
 
 class TestCustomerTransform:
@@ -96,8 +94,10 @@ class TestOrderTransform:
     def test_line_revenue_calculated(self, spark):
         """Silver order items must have a computed line_revenue column."""
         from decimal import Decimal
-        from etl.silver.transform_orders import _cleanse_order_items
+
         from pyspark.sql.types import DecimalType, IntegerType, StructField, StructType
+
+        from etl.silver.transform_orders import _cleanse_order_items
 
         schema = StructType([
             StructField("order_item_id", IntegerType()),
@@ -118,8 +118,10 @@ class TestOrderTransform:
     def test_zero_quantity_quarantined(self, spark):
         """Order items with quantity <= 0 must be quarantined."""
         from decimal import Decimal
-        from etl.silver.transform_orders import _cleanse_order_items
+
         from pyspark.sql.types import DecimalType, IntegerType, StructField, StructType
+
+        from etl.silver.transform_orders import _cleanse_order_items
 
         schema = StructType([
             StructField("order_item_id", IntegerType()),
@@ -143,9 +145,17 @@ class TestOrderTransform:
 class TestProductTransform:
     def test_sku_uppercased(self, spark):
         """SKUs must be normalised to uppercase."""
+        from decimal import Decimal
+
+        from pyspark.sql.types import (
+            DecimalType,
+            IntegerType,
+            StringType,
+            StructField,
+            StructType,
+        )
+
         from etl.silver.transform_products import _cleanse_products
-        from pyspark.sql.types import (DecimalType, IntegerType, StringType,
-                                       StructField, StructType)
 
         schema = StructType([
             StructField("product_id", IntegerType()),
@@ -158,7 +168,6 @@ class TestProductTransform:
             StructField("stock_qty", IntegerType()),
             StructField("supplier_id", IntegerType()),
         ])
-        from decimal import Decimal
         data = [(1, "shf-001", "Shelf", "Desc", "Shelving", "Supplier", Decimal("10.00"), 5, 1)]
         df = spark.createDataFrame(data, schema)
         valid, _ = _cleanse_products(df)
@@ -167,9 +176,17 @@ class TestProductTransform:
 
     def test_negative_price_quarantined(self, spark):
         """Products with negative list_price must be quarantined."""
+        from decimal import Decimal
+
+        from pyspark.sql.types import (
+            DecimalType,
+            IntegerType,
+            StringType,
+            StructField,
+            StructType,
+        )
+
         from etl.silver.transform_products import _cleanse_products
-        from pyspark.sql.types import (DecimalType, IntegerType, StringType,
-                                       StructField, StructType)
 
         schema = StructType([
             StructField("product_id", IntegerType()),
@@ -182,7 +199,6 @@ class TestProductTransform:
             StructField("stock_qty", IntegerType()),
             StructField("supplier_id", IntegerType()),
         ])
-        from decimal import Decimal
         data = [(1, "BAD-001", "Bad Product", "Desc", "Cat", "Sup", Decimal("-5.00"), 5, 1)]
         df = spark.createDataFrame(data, schema)
         valid, quarantine = _cleanse_products(df)

@@ -1,16 +1,12 @@
 """Tests for the Gold layer star schema construction."""
 
-import pytest
 from pyspark.sql import functions as F
 
 
 class TestDimDate:
     def test_dim_date_row_count(self, spark):
         """dim_date must have exactly 4018 rows for 2020-01-01 to 2030-12-31."""
-        from etl.gold.star_schema import build_dim_date
-
-        # We test the data generation logic directly, not the Delta write
-        from datetime import date, timedelta
+        from datetime import date
 
         start = date(2020, 1, 1)
         end = date(2030, 12, 31)
@@ -65,8 +61,6 @@ class TestFactSales:
 
     def test_fact_columns_present(self, spark, sample_order_items, sample_orders):
         """Verify revenue calculation via PySpark column expression."""
-        from decimal import Decimal
-
         # Simulate the fact_sales revenue calculation
         items = sample_order_items.withColumn(
             "revenue",
