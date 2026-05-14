@@ -39,29 +39,68 @@ A production-grade data engineering platform for B2B e-commerce analytics, built
 - Azure CLI (`az login`)
 - Terraform >= 1.7
 - Python 3.11
-- Databricks CLI >= 0.200
+- Homebrew (for Databricks CLI):
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-### 1. Bootstrap Infrastructure
+# After installation
+echo >> /home/bbehrens/.bashrc
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> /home/bbehrens/.bashrc
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+
+sudo apt install build-essential
+```
+- Databricks CLI >= 0.200
+```bash
+brew tap databricks/tap
+brew install databricks
+```
+
+### 1. Bootstrap Terraform State Storage (once only)
+
+```bash
+# See docs/02_terraform_guide.md for the full bootstrap commands
+az group create --name rg-trainetl-terraform-state --location westeurope
+# ... create storage account + tfstate container, then update terraform/backend.tf
+```
+
+### 2. Phase 1 — Azure Infrastructure
+
+`databricks_host` and `databricks_pat_token` stay empty in `dev.tfvars` for now.
 
 ```bash
 cd terraform/
-# See docs/02_terraform_guide.md for the one-time backend setup
 terraform init
 terraform plan -var-file="environments/dev.tfvars"
 terraform apply -var-file="environments/dev.tfvars"
+# Note the databricks_workspace_url from the output
 ```
 
-### 2. Run ETL Locally (Tests Only — No Azure Required)
+### 3. Phase 2 — Databricks Resources
+
+1. Open the workspace URL from step 2, create a Personal Access Token
+2. Fill `databricks_host` and `databricks_pat_token` in `terraform/environments/dev.tfvars`
+3. Run apply again:
 
 ```bash
+terraform apply -var-file="environments/dev.tfvars"
+```
+
+See [Terraform Guide](docs/02_terraform_guide.md) for the full two-phase walkthrough and secrets setup.
+
+### 4. Run ETL Locally (Tests Only — No Azure Required)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r etl/requirements.txt
 pytest tests/ -v
 ```
 
-### 3. Deploy to Databricks
+### 5. Deploy to Databricks
 
 ```bash
-databricks configure  # set host + token from Key Vault outputs
+databricks configure --host <workspace-url> --token <pat>
 databricks bundle deploy --target dev
 databricks bundle run etl_bronze_ingest
 ```

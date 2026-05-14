@@ -14,7 +14,9 @@ def get_spark(app_name: str = "b2b-etl") -> SparkSession:
     env = os.getenv("SPARK_ENV", "databricks")
 
     if env == "local":
-        return (
+        from delta.pip_utils import configure_spark_with_delta_pip
+
+        builder = (
             SparkSession.builder.appName(app_name)
             .master("local[*]")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -24,8 +26,8 @@ def get_spark(app_name: str = "b2b-etl") -> SparkSession:
             )
             .config("spark.sql.warehouse.dir", "/tmp/spark-warehouse")
             .config("spark.driver.memory", "2g")
-            .getOrCreate()
         )
+        return configure_spark_with_delta_pip(builder).getOrCreate()
 
     # On Databricks: the session is already initialised by the runtime.
     # SparkSession.builder.getOrCreate() returns the existing one.

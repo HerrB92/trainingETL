@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.7"
+  required_version = ">= 1.7, < 2.0"
 
   required_providers {
     azurerm = {
@@ -23,7 +23,6 @@ terraform {
 provider "azurerm" {
   features {
     key_vault {
-      # Prevent accidental deletion of Key Vault (soft-delete recovery window)
       purge_soft_delete_on_destroy    = false
       recover_soft_deleted_key_vaults = true
     }
@@ -33,9 +32,12 @@ provider "azurerm" {
   }
 }
 
-# Databricks provider — configured after workspace is created
-# host + token are provided via the databricks module output
+# Databricks provider
+# Two-phase deployment:
+#   Phase 1 (first apply): leave databricks_host = "" → only azurerm resources are created.
+#   Phase 2: fill in databricks_host + databricks_pat_token in dev.tfvars,
+#             then run terraform apply again → Databricks cluster/warehouse/scope are created.
 provider "databricks" {
-  host  = module.databricks.workspace_url
+  host  = var.databricks_host
   token = var.databricks_pat_token
 }

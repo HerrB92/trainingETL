@@ -26,20 +26,15 @@ output "key_vault_uri" {
 output "next_steps" {
   description = "Manual steps required after terraform apply"
   value       = <<-EOT
-    ╔══════════════════════════════════════════════════════════╗
-    ║  NEXT STEPS after terraform apply                       ║
-    ╠══════════════════════════════════════════════════════════╣
-    ║ 1. Log into Databricks: ${module.databricks.workspace_url}
-    ║ 2. Create a Personal Access Token (User Settings → Access Tokens)
-    ║ 3. Store it: az keyvault secret set \
-    ║      --vault-name <kv-name> \
-    ║      --name databricks-token \
-    ║      --value <your-pat>
-    ║ 4. Configure Databricks CLI:
-    ║      databricks configure --host ${module.databricks.workspace_url}
-    ║ 5. Deploy ETL bundle:
-    ║      databricks bundle deploy --target dev
-    ║ 6. Run OLTP seed SQL against: ${module.sql.server_fqdn}
-    ╚══════════════════════════════════════════════════════════╝
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  NEXT STEPS after terraform apply                            ║
+    ╠══════════════════════════════════════════════════════════════╣
+    ║                                                              ║
+    ║ 1. Log into Databricks: ${module.databricks.workspace_url}   ║
+    ║ 2. Configure Databricks CLI:                                 ║
+    ║      databricks configure --host ${module.databricks.workspace_url} ║
+    ║ 3. Follow Phase 2 instructions in docs/02_terraform_guide.md ║
+    ║ Info: SQL FQDN: ${module.sql.server_fqdn}                    ║
+    ╚══════════════════════════════════════════════════════════════╝
   EOT
 }

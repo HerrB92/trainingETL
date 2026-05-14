@@ -9,11 +9,11 @@
 # ONE-TIME BOOTSTRAP (before first terraform init):
 #
 #   # 1. Create a dedicated storage account for Terraform state
-#   az group create --name rg-terraform-state --location westeurope
+#   az group create --name rg-trainetl-terraform-state --location westeurope
 #
 #   az storage account create \
 #     --name stterraformstate$RANDOM \
-#     --resource-group rg-terraform-state \
+#     --resource-group rg-trainetl-terraform-state \
 #     --location westeurope \
 #     --sku Standard_LRS \
 #     --min-tls-version TLS1_2
@@ -28,8 +28,8 @@
 
 terraform {
   backend "azurerm" {
-    resource_group_name  = "rg-terraform-state"
-    storage_account_name = "REPLACE_WITH_YOUR_STATE_STORAGE_ACCOUNT"
+    resource_group_name  = "rg-trainetl-terraform-state"
+    storage_account_name = "stterraformstate3874"
     container_name       = "tfstate"
     key                  = "b2betl.terraform.tfstate"
   }

@@ -1,6 +1,9 @@
 # Databricks Job definitions
-# Each job corresponds to one ETL pipeline stage.
-# Jobs run on the existing cluster created by Terraform.
+# All jobs use serverless compute (environment_key: default) — no VM quota required.
+# The ETL wheel is built and uploaded by the bundle on every deploy.
+#
+# Individual stage jobs (bronze/silver/gold/genai) run standalone.
+# etl_full_pipeline orchestrates all stages in sequence within one job.
 
 resources:
   jobs:
@@ -8,15 +11,17 @@ resources:
       name: "ETL — Bronze Ingestion [${bundle.target}]"
       description: "Ingest all OLTP tables from Azure SQL to Bronze Delta Lake"
 
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
       tasks:
         - task_key: bronze_ingest
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.bronze.ingest
-            parameters:
-              - "--storage-account"
-              - "${var.storage_account_name}"
 
       schedule:
         quartz_cron_expression: "0 0 6 * * ?"  # 06:00 UTC daily
@@ -31,21 +36,20 @@ resources:
       name: "ETL — Silver Transform [${bundle.target}]"
       description: "Cleanse and validate Bronze data into Silver Delta tables"
 
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
       tasks:
         - task_key: silver_customers
-          depends_on:
-            - task_key: bronze_ingest
-              job_id: ${resources.jobs.etl_bronze_ingest.id}
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_customers
 
         - task_key: silver_products
-          depends_on:
-            - task_key: bronze_ingest
-              job_id: ${resources.jobs.etl_bronze_ingest.id}
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_products
@@ -54,7 +58,7 @@ resources:
           depends_on:
             - task_key: silver_customers
             - task_key: silver_products
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_orders
@@ -63,12 +67,14 @@ resources:
       name: "ETL — Gold Star Schema [${bundle.target}]"
       description: "Build Kimball star schema from Silver tables"
 
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
       tasks:
         - task_key: gold_star_schema
-          depends_on:
-            - task_key: silver_orders
-              job_id: ${resources.jobs.etl_silver_transform.id}
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.gold.star_schema
@@ -77,9 +83,14 @@ resources:
       name: "ETL — GenAI Enrichment [${bundle.target}]"
       description: "Generate product embeddings and LLM-based categorization"
 
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
       tasks:
         - task_key: categorize_products
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.genai.categorization
@@ -87,9 +98,7 @@ resources:
         - task_key: generate_embeddings
           depends_on:
             - task_key: categorize_products
-            - task_key: gold_star_schema
-              job_id: ${resources.jobs.etl_gold_build.id}
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.genai.embeddings
@@ -103,23 +112,28 @@ resources:
       name: "ETL — Full Pipeline [${bundle.target}]"
       description: "Orchestrates Bronze → Silver → Gold → GenAI in sequence"
 
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
       tasks:
         - task_key: bronze
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.bronze.ingest
 
         - task_key: silver_customers
-          depends_on: [task_key: bronze]
-          existing_cluster_id: ${var.cluster_id}
+          depends_on: [{task_key: bronze}]
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_customers
 
         - task_key: silver_products
-          depends_on: [task_key: bronze]
-          existing_cluster_id: ${var.cluster_id}
+          depends_on: [{task_key: bronze}]
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_products
@@ -128,21 +142,21 @@ resources:
           depends_on:
             - task_key: silver_customers
             - task_key: silver_products
-          existing_cluster_id: ${var.cluster_id}
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.silver.transform_orders
 
         - task_key: gold
-          depends_on: [task_key: silver_orders]
-          existing_cluster_id: ${var.cluster_id}
+          depends_on: [{task_key: silver_orders}]
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.gold.star_schema
 
         - task_key: genai
-          depends_on: [task_key: gold]
-          existing_cluster_id: ${var.cluster_id}
+          depends_on: [{task_key: gold}]
+          environment_key: default
           python_wheel_task:
             package_name: etl
             entry_point: etl.genai.embeddings

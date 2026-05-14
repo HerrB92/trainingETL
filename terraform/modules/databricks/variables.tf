@@ -6,9 +6,13 @@ variable "storage_account_key" {
   type      = string
   sensitive = true
 }
-variable "key_vault_id" { type = string }
-variable "key_vault_uri" { type = string }
 variable "tags" {
   type    = map(string)
   default = {}
 }
+variable "phase2" {
+  description = "Set to true once databricks_host and databricks_pat_token are filled in"
+  type        = bool
+  default     = false
+}
+

@@ -38,8 +38,8 @@ resource "azurerm_mssql_database" "oltp" {
   # vCore range for the serverless auto-scaling
   min_capacity = 0.5  # minimum 0.5 vCores (lowest billable unit)
 
-  # Auto-pause after 15 minutes of inactivity (minimum allowed value)
-  auto_pause_delay_in_minutes = 15
+  # Auto-pause after 60 minutes of inactivity (Azure minimum; must be divisible by 10, or -1 to disable)
+  auto_pause_delay_in_minutes = 60
 
   # Storage: 32 GB max (increase for production)
   max_size_gb = 32

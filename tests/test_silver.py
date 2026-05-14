@@ -35,10 +35,19 @@ class TestCustomerTransform:
 
     def test_null_customer_id_quarantined(self, spark):
         """Rows with null customer_id must be quarantined."""
+        from pyspark.sql.types import IntegerType, StringType, StructField, StructType
+
         from etl.silver.transform_customers import _cleanse_customers
 
+        schema = StructType([
+            StructField("customer_id", IntegerType(), True),
+            StructField("name", StringType(), True),
+            StructField("email", StringType(), True),
+            StructField("company", StringType(), True),
+            StructField("address_id", IntegerType(), True),
+        ])
         data = [(None, "User", "u@example.de", "Corp", 10)]
-        df = spark.createDataFrame(data, ["customer_id", "name", "email", "company", "address_id"])
+        df = spark.createDataFrame(data, schema)
         valid, quarantine = _cleanse_customers(df)
 
         assert valid.count() == 0

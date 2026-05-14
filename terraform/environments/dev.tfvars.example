@@ -1,0 +1,29 @@
+# Development environment — fill in your actual values
+# DO NOT commit a filled-in version of this file (it contains secrets)
+# Use GitHub Secrets or az keyvault for CI/CD
+
+project_name = "b2betl"
+environment  = "dev"
+location     = "West Europe"
+
+# Get from: az account show --query id -o tsv
+subscription_id = "<YOUR SUBSCRIPTION ID>"
+
+# Get from: az account show --query tenantId -o tsv
+tenant_id = "<YOUR TENANT ID>"
+
+# Get from: az ad signed-in-user show --query id -o tsv
+key_vault_admin_object_id = "<YOUR OBJECT ID>"
+
+sql_admin_username = "sqladmin"
+sql_admin_password = "REPLACE_WITH_SECURE_PASSWORD_12chars+"
+
+# Leave empty on first apply — fill in after creating PAT in Databricks UI
+databricks_pat_token = ""
+
+# Existing AI services (do not change unless you renamed the resource)
+ai_services_resource_group = "<YOUR AI SERVICES RESOURCE GROUP>"
+ai_services_account_name   = "<YOUR AI SERVICES ACCOUNT NAME>"
+
+monthly_budget_eur  = 30
+budget_alert_email  = "<YOUR EMAIL>"

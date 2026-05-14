@@ -51,12 +51,25 @@ variable "sql_admin_password" {
   sensitive   = true
 }
 
-# Databricks — Personal Access Token created after first manual login
-# Set this after running terraform apply the first time
+# Databricks — fill in both after the first terraform apply
+# Phase 1: leave empty → only Azure infrastructure is created
+# Phase 2: set host (from terraform output) + token (from Databricks UI)
+variable "databricks_host" {
+  description = "Databricks workspace URL, e.g. https://adb-xxx.azuredatabricks.net (from terraform output after phase 1)"
+  type        = string
+  default     = ""
+}
+
 variable "databricks_pat_token" {
-  description = "Databricks Personal Access Token (create in workspace UI after first apply)"
+  description = "Databricks Personal Access Token (create in workspace UI after phase 1)"
   type        = string
   sensitive   = true
+  default     = ""
+}
+
+variable "databricks_user_email" {
+  description = "Azure AD email of the Databricks workspace user (single_user_name for Unity Catalog cluster)"
+  type        = string
   default     = ""
 }
 

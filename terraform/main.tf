@@ -59,15 +59,14 @@ module "sql" {
 }
 
 module "databricks" {
-  source              = "./modules/databricks"
-  prefix              = local.prefix
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
+  source               = "./modules/databricks"
+  prefix               = local.prefix
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.main.name
   storage_account_name = module.storage.account_name
   storage_account_key  = module.storage.primary_access_key
-  key_vault_id         = module.keyvault.key_vault_id
-  key_vault_uri        = module.keyvault.key_vault_uri
-  tags                = local.tags
+  phase2               = var.databricks_host != ""
+  tags                 = local.tags
 }
 
 # ── Budget Alert ─────────────────────────────────────────────
@@ -91,7 +90,9 @@ resource "azurerm_consumption_budget_resource_group" "main" {
   time_grain = "Monthly"
 
   time_period {
-    start_date = formatdate("YYYY-MM-01'T'00:00:00Z", timestamp())
+    # Static start date: first day of the project month.
+    # Avoid timestamp() here — it is non-deterministic and causes a plan diff on every run.
+    start_date = "2026-05-01T00:00:00Z"
   }
 
   notification {

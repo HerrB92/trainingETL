@@ -9,6 +9,7 @@ import shutil
 import tempfile
 
 import pytest
+from delta.pip_utils import configure_spark_with_delta_pip
 from pyspark.sql import SparkSession
 
 # Force local mode for all tests
@@ -17,8 +18,12 @@ os.environ["SPARK_ENV"] = "local"
 
 @pytest.fixture(scope="session")
 def spark() -> SparkSession:
-    """Session-scoped SparkSession in local mode with Delta Lake enabled."""
-    session = (
+    """Session-scoped SparkSession in local mode with Delta Lake enabled.
+
+    configure_spark_with_delta_pip sets spark.jars.packages so Spark downloads
+    the Delta JAR from Maven on first run (cached in ~/.ivy2 afterwards).
+    """
+    builder = (
         SparkSession.builder.appName("test")
         .master("local[1]")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
@@ -28,9 +33,9 @@ def spark() -> SparkSession:
         )
         .config("spark.sql.warehouse.dir", "/tmp/test-spark-warehouse")
         .config("spark.driver.memory", "1g")
-        .config("spark.ui.enabled", "false")  # disable Spark UI in tests
-        .getOrCreate()
+        .config("spark.ui.enabled", "false")
     )
+    session = configure_spark_with_delta_pip(builder).getOrCreate()
     session.sparkContext.setLogLevel("ERROR")
     yield session
     session.stop()

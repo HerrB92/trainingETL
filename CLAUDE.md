@@ -79,6 +79,10 @@ On Databricks, secrets are read from a Databricks Secret Scope backed by Azure K
 ## Running Locally
 
 ```bash
+# Create and activate a virtual environment first
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
 # Install dependencies
 pip install -r etl/requirements.txt
 

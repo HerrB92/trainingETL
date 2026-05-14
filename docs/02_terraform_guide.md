@@ -83,13 +83,13 @@ Terraform needs a place to store its state file. We use an Azure Storage account
 
 ```bash
 # 1. Create a resource group for the state storage
-az group create --name rg-terraform-state --location westeurope
+az group create --name rg-trainetl-terraform-state --location westeurope
 
 # 2. Create a storage account (name must be globally unique — add random suffix)
 STATE_ACCOUNT="stterraformstate$(date +%s | tail -c 5)"
 az storage account create \
   --name "$STATE_ACCOUNT" \
-  --resource-group rg-terraform-state \
+  --resource-group rg-trainetl-terraform-state \
   --location westeurope \
   --sku Standard_LRS
 
@@ -106,7 +106,7 @@ Then update `terraform/backend.tf`:
 ```hcl
 terraform {
   backend "azurerm" {
-    resource_group_name  = "rg-terraform-state"
+    resource_group_name  = "rg-trainetl-terraform-state"
     storage_account_name = "stterraformstate12345"  # ← your name here
     container_name       = "tfstate"
     key                  = "b2betl.terraform.tfstate"
@@ -168,25 +168,92 @@ terraform destroy -var-file="environments/dev.tfvars"
 
 **Warning:** This deletes everything, including data in ADLS. Do not run in production.
 
-## After `terraform apply` — Manual Steps
+## Two-Phase Deployment
 
-After the first `terraform apply` completes:
+The Databricks provider needs the workspace URL and a Personal Access Token (PAT) to create
+resources inside the workspace (cluster, SQL warehouse, secret scope). But the URL only exists
+*after* the workspace itself is created — a classic chicken-and-egg situation.
 
-1. **Log in to Databricks** using the URL shown in the outputs
-2. **Create a Personal Access Token**: User Settings (top right) → Access Tokens → Generate new token
-3. **Store it in Key Vault**:
-   ```bash
-   az keyvault secret set \
-     --vault-name <kv-name-from-output> \
-     --name databricks-token \
-     --value <your-token>
+The solution: two separate `terraform apply` runs.
+
+### Phase 1 — Azure infrastructure (workspace URL still unknown)
+
+`dev.tfvars` has `databricks_host = ""` and `databricks_pat_token = ""`. That is intentional.
+Terraform will create all Azure resources but skip Databricks-internal resources.
+
+```bash
+terraform apply -var-file="environments/dev.tfvars"
+```
+
+When it completes, copy the workspace URL from the output:
+
+```
+databricks_workspace_url = "https://adb-1234567890.12.azuredatabricks.net"
+```
+
+### Phase 2 — Databricks-internal resources (cluster, warehouse, secret scope)
+
+1. **Open the Databricks workspace** using the URL above
+2. **Create a Personal Access Token (PAT)**: click your username (top right) → Settings → Developer → Access Tokens → Generate new token (lifetime: 90 days is fine for dev, API Scope: Other API & all APIs)
+3. Store the PAT in the key vault (adapt "<kv-name>" and "<your-pat>"):
+    ```bash
+    az keyvault secret set \
+          --vault-name <kv-name> \
+          --name databricks-token \
+          --value <your-pat>
+    ```
+4. **Edit `terraform/environments/dev.tfvars`** — fill in both values:
+
+   ```hcl
+   databricks_host      = "https://adb-1234567890.12.azuredatabricks.net"
+   databricks_pat_token = "dapi..."
    ```
-4. **Run the second apply** to configure the Databricks provider with the token:
+
+5. **Run apply again**:
+
    ```bash
-   terraform apply \
-     -var-file="environments/dev.tfvars" \
-     -var="databricks_pat_token=<your-token>"
+   terraform apply -var-file="environments/dev.tfvars"
    ```
+
+   Terraform now connects to the workspace and creates the cluster, SQL warehouse, and secret scope.
+
+6. **Add secrets to the Databricks scope** (the scope is created by Terraform; secrets are added via CLI):
+
+   ```bash
+   databricks secrets put-secret kv-scope sql-admin-password --string-value "your-sql-password"
+   databricks secrets put-secret kv-scope sql-admin-username --string-value "sqladmin"
+   databricks secrets put-secret kv-scope storage-account-name --string-value "$(terraform output -raw storage_account_name)"
+   databricks secrets put-secret kv-scope ai-services-endpoint --string-value "https://..."
+   databricks secrets put-secret kv-scope ai-services-api-key  --string-value "..."
+   ```
+
+7. **Deploy ETL bundle**:
+    ```bash
+    cd databricks
+    databricks bundle deploy --target dev
+    ```
+
+8. **Run OLTP seed SQL**: The easiest way is to use the Azure Portal Query Editor:
+    1. portal.azure.com → open db-b2betl-dev-oltp database (see next_steps output for the FQDN)
+    2. Left menu: Query editor (preview)
+    3. Log in with sqladmin & SQL password
+    4. New query
+    5. Copy & paste content from:
+        1. sql/oltp/01_create_tables.sql → Run (ignore any UI error marks)
+        2. sql/oltp/02_seed_data.sql → Run
+
+Alternatively you can use sqlcmd (if installed):
+
+    ```bash
+    sqlcmd -S sql-b2betl-dev-2arjua.database.windows.net \
+          -d db-b2betl-dev-oltp \
+          -U sqladmin -P "dein-passwort" \
+          -i sql/oltp/01_create_tables.sql
+    sqlcmd -S sql-b2betl-dev-2arjua.database.windows.net \
+          -d db-b2betl-dev-oltp \
+          -U sqladmin -P "dein-passwort" \
+          -i sql/oltp/02_seed_data.sql
+    ```
 
 ## Common Errors
 

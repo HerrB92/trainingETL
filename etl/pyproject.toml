@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etl"
+version = "0.1.0"
+requires-python = ">=3.11"
+# Only include deps not provided by Databricks Runtime (pyspark, delta-spark are pre-installed).
+dependencies = [
+    "azure-identity>=1.16.0",
+    "azure-keyvault-secrets>=4.8.0",
+    "openai>=1.30.0",
+]
+
+[project.scripts]
+# Entry points used by python_wheel_task in Databricks Asset Bundle jobs.
+"etl.bronze.ingest"               = "etl.bronze.ingest:run_bronze_ingestion"
+"etl.silver.transform_customers"  = "etl.silver.transform_customers:run"
+"etl.silver.transform_products"   = "etl.silver.transform_products:run"
+"etl.silver.transform_orders"     = "etl.silver.transform_orders:run"
+"etl.gold.star_schema"            = "etl.gold.star_schema:run"
+"etl.genai.categorization"        = "etl.genai.categorization:run"
+"etl.genai.embeddings"            = "etl.genai.embeddings:run"
+
+[tool.setuptools]
+# The etl package source lives one level up (trainingETL/etl/).
+package-dir = {"" = ".."}
+packages = ["etl", "etl.bronze", "etl.silver", "etl.gold", "etl.genai", "etl.utils"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
