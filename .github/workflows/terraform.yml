@@ -25,6 +25,7 @@ jobs:
       pull-requests: write  # to post plan output as a PR comment
 
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
       ARM_CLIENT_ID:       ${{ secrets.ARM_CLIENT_ID }}
       ARM_TENANT_ID:       ${{ secrets.ARM_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
