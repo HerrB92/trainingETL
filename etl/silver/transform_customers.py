@@ -104,8 +104,12 @@ def transform_customers(spark: SparkSession, storage_account: str) -> None:
     addr_lookup = addr_valid.select("address_id", "city", "country_code")
     cust_enriched = cust_valid.join(addr_lookup, on="address_id", how="left")
 
-    _upsert_to_silver(spark, addr_valid, _build_silver_path(storage_account, "addresses"), "address_id")
-    _upsert_to_silver(spark, cust_enriched, _build_silver_path(storage_account, "customers"), "customer_id")
+    _upsert_to_silver(
+        spark, addr_valid, _build_silver_path(storage_account, "addresses"), "address_id"
+    )
+    _upsert_to_silver(
+        spark, cust_enriched, _build_silver_path(storage_account, "customers"), "customer_id"
+    )
 
     _write_quarantine(addr_quarantine, storage_account, "addresses")
     _write_quarantine(cust_quarantine, storage_account, "customers")
@@ -118,6 +122,7 @@ def transform_customers(spark: SparkSession, storage_account: str) -> None:
 
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("silver-customers")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

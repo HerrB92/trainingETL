@@ -110,17 +110,13 @@ def categorize_uncategorized_products(spark: SparkSession, storage_account: str)
     pandas_df["category_name"] = categories
     pandas_df["_categorized_by"] = "llm"
 
-    result_df = spark.createDataFrame(
-        pandas_df[["product_id", "category_name", "_categorized_by"]]
-    )
+    result_df = spark.createDataFrame(pandas_df[["product_id", "category_name", "_categorized_by"]])
 
     # Update Silver products with LLM-assigned categories
     from delta.tables import DeltaTable
 
     target = DeltaTable.forPath(spark, silver_path)
-    target.alias("t").merge(
-        result_df.alias("s"), "t.product_id = s.product_id"
-    ).whenMatchedUpdate(
+    target.alias("t").merge(result_df.alias("s"), "t.product_id = s.product_id").whenMatchedUpdate(
         condition="s.category_name IS NOT NULL",
         set={
             "category_name": "s.category_name",
@@ -134,6 +130,7 @@ def categorize_uncategorized_products(spark: SparkSession, storage_account: str)
 
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("genai-categorization")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

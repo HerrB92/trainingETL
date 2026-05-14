@@ -68,9 +68,8 @@ def transform_products(spark: SparkSession, storage_account: str) -> None:
         F.col("name").alias("supplier_name"),
     )
 
-    enriched = (
-        products.join(cat_lookup, on="category_id", how="left")
-        .join(sup_lookup, on="supplier_id", how="left")
+    enriched = products.join(cat_lookup, on="category_id", how="left").join(
+        sup_lookup, on="supplier_id", how="left"
     )
 
     valid_df, quarantine_df = _cleanse_products(enriched)
@@ -88,6 +87,7 @@ def transform_products(spark: SparkSession, storage_account: str) -> None:
 
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("silver-products")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

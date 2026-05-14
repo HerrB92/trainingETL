@@ -45,19 +45,32 @@ def _silver_path(storage_account: str, entity: str) -> str:
 
 # ── dim_date ──────────────────────────────────────────────────
 
+
 def build_dim_date(spark: SparkSession, storage_account: str) -> None:
     """Generate dim_date rows for 2020-01-01 through 2030-12-31."""
     from pyspark.sql import Row
 
-    MONTH_NAMES = ["January","February","March","April","May","June",
-                   "July","August","September","October","November","December"]
-    DAY_NAMES = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+    MONTH_NAMES = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ]
+    DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
     # German public holidays (static set for the demo — national only)
     DE_HOLIDAYS = {
         date(y, m, d)
         for y in range(2020, 2031)
-        for m, d in [(1,1),(5,1),(10,3),(12,25),(12,26)]
+        for m, d in [(1, 1), (5, 1), (10, 3), (12, 25), (12, 26)]
     }
 
     rows = []
@@ -81,19 +94,21 @@ def build_dim_date(spark: SparkSession, storage_account: str) -> None:
         )
         current += timedelta(days=1)
 
-    dim_date_schema = StructType([
-        StructField("date_key", IntegerType(), False),
-        StructField("date", DateType(), False),
-        StructField("year", ShortType(), False),
-        StructField("quarter", ByteType(), False),
-        StructField("month", ByteType(), False),
-        StructField("month_name", StringType(), False),
-        StructField("week", ByteType(), False),
-        StructField("day_of_week", ByteType(), False),
-        StructField("day_name", StringType(), False),
-        StructField("is_weekend", BooleanType(), False),
-        StructField("is_holiday_de", BooleanType(), False),
-    ])
+    dim_date_schema = StructType(
+        [
+            StructField("date_key", IntegerType(), False),
+            StructField("date", DateType(), False),
+            StructField("year", ShortType(), False),
+            StructField("quarter", ByteType(), False),
+            StructField("month", ByteType(), False),
+            StructField("month_name", StringType(), False),
+            StructField("week", ByteType(), False),
+            StructField("day_of_week", ByteType(), False),
+            StructField("day_name", StringType(), False),
+            StructField("is_weekend", BooleanType(), False),
+            StructField("is_holiday_de", BooleanType(), False),
+        ]
+    )
 
     df = spark.createDataFrame(rows, schema=dim_date_schema)
     path = _gold_path(storage_account, "dim_date")
@@ -102,6 +117,7 @@ def build_dim_date(spark: SparkSession, storage_account: str) -> None:
 
 
 # ── dim_supplier ──────────────────────────────────────────────
+
 
 def build_dim_supplier(spark: SparkSession, storage_account: str) -> None:
     suppliers = spark.read.format("delta").load(_silver_path(storage_account, "suppliers"))
@@ -120,6 +136,7 @@ def build_dim_supplier(spark: SparkSession, storage_account: str) -> None:
 
 
 # ── dim_product ───────────────────────────────────────────────
+
 
 def build_dim_product(spark: SparkSession, storage_account: str) -> None:
     products = spark.read.format("delta").load(_silver_path(storage_account, "products"))
@@ -140,6 +157,7 @@ def build_dim_product(spark: SparkSession, storage_account: str) -> None:
 
 
 # ── dim_customer (SCD Type 2) ─────────────────────────────────
+
 
 def build_dim_customer(spark: SparkSession, storage_account: str) -> None:
     """SCD2: preserve history when customer company or city changes.
@@ -172,9 +190,7 @@ def build_dim_customer(spark: SparkSession, storage_account: str) -> None:
 
     if not DeltaTable.isDeltaTable(spark, path):
         # First run: add surrogate key and write
-        df = segment_df.withColumn(
-            "customer_key", F.monotonically_increasing_id()
-        )
+        df = segment_df.withColumn("customer_key", F.monotonically_increasing_id())
         df.write.format("delta").mode("overwrite").save(path)
         logger.info("dim_customer initial load", extra={"rows": df.count()})
         return
@@ -202,6 +218,7 @@ def build_dim_customer(spark: SparkSession, storage_account: str) -> None:
 
 # ── fact_sales ────────────────────────────────────────────────
 
+
 def build_fact_sales(spark: SparkSession, storage_account: str) -> None:
     orders = spark.read.format("delta").load(_silver_path(storage_account, "orders"))
     items = spark.read.format("delta").load(_silver_path(storage_account, "order_items"))
@@ -210,9 +227,7 @@ def build_fact_sales(spark: SparkSession, storage_account: str) -> None:
     dim_supplier = spark.read.format("delta").load(_gold_path(storage_account, "dim_supplier"))
 
     # Current customer key only (SCD2 — is_current rows)
-    cust_keys = dim_customer.filter(F.col("is_current")).select(
-        "customer_id", "customer_key"
-    )
+    cust_keys = dim_customer.filter(F.col("is_current")).select("customer_id", "customer_key")
     prod_keys = dim_product.select("product_id", "product_key", "supplier_name")
     sup_keys = dim_supplier.select("supplier_id", "supplier_key", F.col("name").alias("_sup_name"))
 
@@ -258,8 +273,10 @@ def build_fact_sales(spark: SparkSession, storage_account: str) -> None:
 
 # ── Orchestration entry point ─────────────────────────────────
 
+
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("gold-star-schema")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

@@ -53,10 +53,7 @@ def _embed_texts(texts: list[str]) -> list[list[float]]:
 
 def _embed_products_pandas(products_df) -> list[list[float]]:
     """Embed all products in batches; returns list aligned with input rows."""
-    texts = [
-        f"{row.name}. {row.description or ''}".strip()
-        for row in products_df.itertuples()
-    ]
+    texts = [f"{row.name}. {row.description or ''}".strip() for row in products_df.itertuples()]
     embeddings = []
     for i in range(0, len(texts), BATCH_SIZE):
         batch = texts[i : i + BATCH_SIZE]
@@ -70,8 +67,8 @@ def generate_product_embeddings(spark: SparkSession, storage_account: str) -> No
     silver_path = f"abfss://silver@{storage_account}.dfs.core.windows.net/products"
     gold_path = f"abfss://gold@{storage_account}.dfs.core.windows.net/dim_product"
 
-    products_df = spark.read.format("delta").load(silver_path).select(
-        "product_id", "name", "description"
+    products_df = (
+        spark.read.format("delta").load(silver_path).select("product_id", "name", "description")
     )
     pandas_df = products_df.toPandas()
 
@@ -111,8 +108,8 @@ def search_products(
     query_embedding = _embed_texts([query])[0]
 
     gold_path = f"abfss://gold@{storage_account}.dfs.core.windows.net/dim_product"
-    dim_product = spark.read.format("delta").load(gold_path).filter(
-        F.col("embedding_vector").isNotNull()
+    dim_product = (
+        spark.read.format("delta").load(gold_path).filter(F.col("embedding_vector").isNotNull())
     )
 
     # Cosine similarity in PySpark (no external vector DB required)
@@ -142,6 +139,7 @@ def search_products(
 
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("genai-embeddings")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

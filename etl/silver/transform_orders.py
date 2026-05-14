@@ -45,9 +45,7 @@ def _cleanse_order_items(df: DataFrame) -> tuple[DataFrame, DataFrame]:
     # Calculate line revenue (stored in Silver for convenience)
     valid_df = df.filter(valid_mask).withColumn(
         "line_revenue",
-        F.round(
-            F.col("quantity") * F.col("unit_price") * (1 - F.col("discount_pct") / 100), 2
-        ),
+        F.round(F.col("quantity") * F.col("unit_price") * (1 - F.col("discount_pct") / 100), 2),
     )
     return valid_df, df.filter(~valid_mask).withColumn(
         "_quarantine_reason", F.lit("Failed order_item validation")
@@ -88,6 +86,7 @@ def transform_orders(spark: SparkSession, storage_account: str) -> None:
 
 def run(storage_account: str | None = None) -> None:
     from etl.utils.keyvault import get_secret
+
     spark = get_spark("silver-orders")
     if storage_account is None:
         storage_account = get_secret("storage-account-name")

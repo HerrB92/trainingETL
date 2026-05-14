@@ -38,7 +38,7 @@ A production-grade data engineering platform for B2B e-commerce analytics, built
 
 - Azure CLI (`az login`)
 - Terraform >= 1.7
-- Python 3.11
+- Python 3.12
 - Homebrew (for Databricks CLI):
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -131,13 +131,19 @@ trainingETL/
 ## Tech Stack
 
 - **Orchestration:** Databricks Workflows (via Asset Bundles)
-- **Processing:** PySpark 3.5 on Databricks Runtime 14.3 LTS
+- **Processing:** PySpark 3.5 on Databricks Runtime 14.3 LTS (Python 3.11 on cluster)
 - **Storage:** Azure Data Lake Storage Gen2 with Delta Lake
 - **Source DB:** Azure SQL Database (Serverless, auto-pause)
 - **IaC:** Terraform (azurerm + databricks providers)
 - **CI/CD:** GitHub Actions
 - **GenAI:** Azure AI Services (OpenAI embeddings + GPT-4o)
 - **Secrets:** Azure Key Vault
+
+> **Python version note:** Local development and CI use **Python 3.12**. A higher version (e.g. 3.14) is
+> not viable without a major upgrade: `pyspark==3.5.x` and `delta-spark==3.1.x` have no wheels for
+> Python 3.14 (both predate its release), and Databricks Runtime 14.3 LTS always runs Python 3.11 on
+> the cluster regardless of the local version. Upgrading to Python 3.14 would require migrating to
+> PySpark 4.x, which carries breaking API changes.
 
 ## Cost Estimate (Dev Environment)
 

@@ -29,8 +29,7 @@ def test_metadata_columns_added(spark, sample_customers):
     batch_id = "test-batch-001"
 
     enriched = (
-        sample_customers
-        .withColumn("_source_system", F.lit("azure_sql_oltp"))
+        sample_customers.withColumn("_source_system", F.lit("azure_sql_oltp"))
         .withColumn("_ingested_at", F.lit("2024-01-01T00:00:00+00:00"))
         .withColumn("_batch_id", F.lit(batch_id))
     )

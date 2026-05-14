@@ -22,13 +22,13 @@ logger = get_logger(__name__)
 
 # Tables and their watermark column (None = full load only)
 OLTP_TABLES: dict[str, Optional[str]] = {
-    "oltp.addresses": None,           # rarely changes, always full load
+    "oltp.addresses": None,  # rarely changes, always full load
     "oltp.categories": None,
     "oltp.suppliers": "created_at",
     "oltp.customers": "created_at",
     "oltp.products": "updated_at",
     "oltp.orders": "created_at",
-    "oltp.order_items": None,         # no updated_at; use order watermark
+    "oltp.order_items": None,  # no updated_at; use order watermark
 }
 
 
@@ -108,12 +108,7 @@ def ingest_table(
 
     # Write mode: overwrite for full load, append for incremental
     write_mode = "overwrite" if load_type == "full" else "append"
-    (
-        df.write.format("delta")
-        .mode(write_mode)
-        .option("mergeSchema", "true")
-        .save(bronze_path)
-    )
+    (df.write.format("delta").mode(write_mode).option("mergeSchema", "true").save(bronze_path))
 
     # Update watermark
     if watermark_col:

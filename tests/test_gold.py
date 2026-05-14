@@ -27,16 +27,25 @@ class TestDimDate:
         from datetime import date
 
         saturday = date(2024, 1, 13)  # Known Saturday
-        sunday = date(2024, 1, 14)   # Known Sunday
-        monday = date(2024, 1, 15)   # Known Monday
+        sunday = date(2024, 1, 14)  # Known Sunday
+        monday = date(2024, 1, 15)  # Known Monday
 
         assert saturday.weekday() >= 5  # is_weekend
-        assert sunday.weekday() >= 5    # is_weekend
-        assert monday.weekday() < 5     # not is_weekend
+        assert sunday.weekday() >= 5  # is_weekend
+        assert monday.weekday() < 5  # not is_weekend
 
     def test_quarter_calculation(self):
         """Quarter must be correctly derived from month number."""
-        for month, expected_quarter in [(1,1),(3,1),(4,2),(6,2),(7,3),(9,3),(10,4),(12,4)]:
+        for month, expected_quarter in [
+            (1, 1),
+            (3, 1),
+            (4, 2),
+            (6, 2),
+            (7, 3),
+            (9, 3),
+            (10, 4),
+            (12, 4),
+        ]:
             quarter = ((month - 1) // 3) + 1
             assert quarter == expected_quarter, f"Month {month} should be Q{expected_quarter}"
 
@@ -64,9 +73,7 @@ class TestFactSales:
         # Simulate the fact_sales revenue calculation
         items = sample_order_items.withColumn(
             "revenue",
-            F.round(
-                F.col("quantity") * F.col("unit_price") * (1 - F.col("discount_pct") / 100), 2
-            ),
+            F.round(F.col("quantity") * F.col("unit_price") * (1 - F.col("discount_pct") / 100), 2),
         ).withColumn("cost_estimate", F.round(F.col("revenue") * 0.60, 2))
 
         assert "revenue" in items.columns
@@ -80,6 +87,7 @@ class TestFactSales:
 class TestDimCustomer:
     def test_segment_logic(self, spark, sample_customers):
         """Customer segment must be assigned based on customer_id rule."""
+
         # In the demo, segment is rule-based on customer_id
         # IDs 1-5 → ENTERPRISE, 6-10 → MID, >10 → SMALL
         def classify(customer_id: int) -> str:

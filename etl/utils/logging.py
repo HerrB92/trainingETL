@@ -21,10 +21,27 @@ class JsonFormatter(logging.Formatter):
         # Any extra kwargs passed to the logger call
         for key, value in record.__dict__.items():
             if key not in (
-                "msg", "args", "levelname", "levelno", "pathname", "filename",
-                "module", "exc_info", "exc_text", "stack_info", "lineno",
-                "funcName", "created", "msecs", "relativeCreated", "thread",
-                "threadName", "processName", "process", "message", "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "message",
+                "name",
             ):
                 payload[key] = value
         return json.dumps(payload, default=str)
